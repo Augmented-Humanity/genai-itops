@@ -1,0 +1,3 @@
+# No external dependencies — uses stdlib only + T4H bridge client
+# anthropic SDK not required (uses urllib directly for Lambda compatibility)
+# psycopg not required (all DB via T4H bridge)
