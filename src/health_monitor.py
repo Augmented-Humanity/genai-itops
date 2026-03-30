@@ -24,39 +24,45 @@ HEALTH_CHECKS = {
         "threshold": 10,
         "metric": "unresolved_hitl_1h"
     },
-    "lambda_registry_active": {
+    "daily_report_fresh": {
         "query": """
-            SELECT COUNT(*) as c FROM mcp_lambda_registry
-            WHERE status = 'ACTIVE'
+            SELECT COUNT(*) as c FROM autonomy_daily_report
+            WHERE report_date >= CURRENT_DATE - 1
         """,
-        "threshold": 40,
-        "metric": "active_lambdas",
+        "threshold": 1,
+        "metric": "daily_report_age_days",
         "check_type": "min"
     },
-    "arch_systems_active": {
+    "daily_executions_7d": {
         "query": """
-            SELECT COUNT(*) as c FROM arch_system_registry
-            WHERE is_active = true
+            SELECT COALESCE(SUM(
+                (report_json->'data_ops'->>'executed_completed')::int +
+                (report_json->'task_ops'->>'executed_completed')::int +
+                (report_json->'website_ops'->>'executed_completed')::int +
+                (report_json->'finance_ops'->>'executed_completed')::int
+            ), 0) as c
+            FROM autonomy_daily_report
+            WHERE report_date >= CURRENT_DATE - 7
         """,
-        "threshold": 28,
-        "metric": "active_biz",
+        "threshold": 5,
+        "metric": "executed_ops_7d",
         "check_type": "min"
     },
-    "rdti_deadline_safe": {
+    "gemini_reports_fresh": {
         "query": """
-            SELECT (DATE '2026-04-30' - CURRENT_DATE)::int as c
+            SELECT (CURRENT_DATE - MAX(created_at)::date)::int as c
+            FROM gemini_reports
         """,
-        "threshold": 7,
-        "metric": "rdti_days_remaining",
-        "check_type": "min"
+        "threshold": 3,
+        "metric": "gemini_report_staleness_days"
     },
-    "db_headroom": {
+    "maat_reports_running": {
         "query": """
-            SELECT (100 - COUNT(*))::int as c FROM pg_stat_activity
-            WHERE state = 'active'
+            SELECT COUNT(*) as c FROM maat_report_run_log
+            WHERE created_at > NOW() - INTERVAL '7 days'
         """,
-        "threshold": 20,
-        "metric": "db_connection_headroom",
+        "threshold": 1,
+        "metric": "maat_report_runs_7d",
         "check_type": "min"
     },
     "incident_open": {
