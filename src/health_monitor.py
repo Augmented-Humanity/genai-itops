@@ -24,14 +24,39 @@ HEALTH_CHECKS = {
         "threshold": 10,
         "metric": "unresolved_hitl_1h"
     },
-    "autonomy_runs": {
+    "lambda_registry_active": {
         "query": """
-            SELECT COUNT(*) as c FROM autonomy_execution_runs
-            WHERE run_started_at > NOW() - INTERVAL '24 hours'
-            AND evidence_class IS NOT NULL
+            SELECT COUNT(*) as c FROM mcp_lambda_registry
+            WHERE status = 'ACTIVE'
         """,
-        "threshold": 1,
-        "metric": "evidenced_runs_24h",
+        "threshold": 40,
+        "metric": "active_lambdas",
+        "check_type": "min"
+    },
+    "arch_systems_active": {
+        "query": """
+            SELECT COUNT(*) as c FROM arch_system_registry
+            WHERE is_active = true
+        """,
+        "threshold": 28,
+        "metric": "active_biz",
+        "check_type": "min"
+    },
+    "rdti_deadline_safe": {
+        "query": """
+            SELECT (DATE '2026-04-30' - CURRENT_DATE)::int as c
+        """,
+        "threshold": 7,
+        "metric": "rdti_days_remaining",
+        "check_type": "min"
+    },
+    "db_headroom": {
+        "query": """
+            SELECT (100 - COUNT(*))::int as c FROM pg_stat_activity
+            WHERE state = 'active'
+        """,
+        "threshold": 20,
+        "metric": "db_connection_headroom",
         "check_type": "min"
     },
     "incident_open": {
