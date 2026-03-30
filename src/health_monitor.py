@@ -17,22 +17,22 @@ HEALTH_CHECKS = {
     },
     "lambda_errors": {
         "query": """
-            SELECT COUNT(*) as c FROM hitl_log
-            WHERE created_at > NOW() - INTERVAL '1 hour'
-            AND result ILIKE '%error%'
+            SELECT COUNT(*) as c FROM autonomy_hitl_queue
+            WHERE resolved = false
+            AND surfaced_at > NOW() - INTERVAL '1 hour'
         """,
         "threshold": 10,
-        "metric": "error_count_1h"
+        "metric": "unresolved_hitl_1h"
     },
     "autonomy_runs": {
         "query": """
             SELECT COUNT(*) as c FROM autonomy_execution_runs
-            WHERE started_at > NOW() - INTERVAL '24 hours'
-            AND status = 'REAL'
+            WHERE run_started_at > NOW() - INTERVAL '24 hours'
+            AND evidence_class IS NOT NULL
         """,
         "threshold": 1,
-        "metric": "real_runs_24h",
-        "check_type": "min"  # alert if BELOW threshold
+        "metric": "evidenced_runs_24h",
+        "check_type": "min"
     },
     "incident_open": {
         "query": """
@@ -44,8 +44,9 @@ HEALTH_CHECKS = {
     },
     "sites_down": {
         "query": """
-            SELECT COUNT(*) as c FROM autonomy_signals
-            WHERE signal_type = 'SITE_DOWN' AND resolved_at IS NULL
+            SELECT COUNT(*) as c FROM autonomy_signal_registry
+            WHERE signal_type_key ILIKE '%SITE%DOWN%'
+            OR (signal_type_key ILIKE '%SITE%' AND signal_status = 'open')
         """,
         "threshold": 0,
         "metric": "sites_down"
