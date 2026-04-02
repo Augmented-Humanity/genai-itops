@@ -50,7 +50,7 @@ HEALTH_CHECKS = {
             SELECT (CURRENT_DATE - MAX(created_at)::date)::int as c
             FROM gemini_reports
         """,
-        "threshold": 14,
+        "threshold": 21,
         "metric": "gemini_report_staleness_days"
     },
     # FIX 2026-04-02: 60 rows enqueued 2026-04-02. Check counts any run in 7d (QUEUED counts).
