@@ -33,27 +33,29 @@ HEALTH_CHECKS = {
         "metric": "daily_report_age_days",
         "check_type": "min"
     },
-    # FIX 2026-04-02: replaced JSON field parse (always 0) with row count.
-    # autonomy_daily_report fires daily — 7 rows/week proves EB + generator healthy.
     "daily_executions_7d": {
         "query": """
-            SELECT COUNT(*) as c FROM autonomy_daily_report
+            SELECT COALESCE(SUM(
+                (report_json->'data_ops'->>'executed_completed')::int +
+                (report_json->'task_ops'->>'executed_completed')::int +
+                (report_json->'website_ops'->>'executed_completed')::int +
+                (report_json->'finance_ops'->>'executed_completed')::int
+            ), 0) as c
+            FROM autonomy_daily_report
             WHERE report_date >= CURRENT_DATE - 7
         """,
         "threshold": 5,
-        "metric": "daily_reports_generated_7d",
+        "metric": "executed_ops_7d",
         "check_type": "min"
     },
-    # FIX 2026-04-02: threshold 3→14 (gemini synth cadence is ~2 weeks; table confirmed correct).
     "gemini_reports_fresh": {
         "query": """
             SELECT (CURRENT_DATE - MAX(created_at)::date)::int as c
             FROM gemini_reports
         """,
-        "threshold": 21,
+        "threshold": 3,
         "metric": "gemini_report_staleness_days"
     },
-    # FIX 2026-04-02: 60 rows enqueued 2026-04-02. Check counts any run in 7d (QUEUED counts).
     "maat_reports_running": {
         "query": """
             SELECT COUNT(*) as c FROM maat_report_run_log
